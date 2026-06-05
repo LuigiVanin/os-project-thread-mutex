@@ -14,10 +14,12 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
+    track.cpp \
     trem.cpp \
     utils.cpp
 
 HEADERS  += mainwindow.h \
+    track.h \
     trem.h \
     utils.h
 

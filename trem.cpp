@@ -4,17 +4,17 @@
 #include "utils.h"
 
 //Construtor
-Trem::Trem(int ID, QLabel *trem_entity,std::vector<QLabel *> tracks){
+Trem::Trem(int ID, QLabel *trem_entity,std::vector<Track *> tracks){
     this->ID = ID;
     this->tracks = tracks;
     this->entity = trem_entity;
 
-    this->x = tracks[0]->x();
-    this->y = tracks[0]->y();
+    this->x = tracks[0]->getUi()->x();
+    this->y = tracks[0]->getUi()->y();
     // this->x = trem_entity->x();
     // this->y = trem_entity->x();
 
-    this->velocidade = 100;
+    this->updateVelocity(50);
 }
 
 int Trem::getID() {
@@ -26,22 +26,29 @@ QLabel* Trem::getEntity() {
 }
 
 void Trem::updateVelocity(int value) {
+    // this->velocidade = value;
 
-    this->velocidade = (100 - value) * 2;
+    // O Slide vai de 1 até 99, precisamos que transformar seus inputs para milissegundos
+    // Transformação para que a velocidade vá de 1ms até 400ms, sendo 99 = 1ms e 1 = 400ms
+    if (value >= 99) {
+        this->velocidade = 1;
+    }
+
+    this->velocidade = (100 - value) * 4;
 }
 
 
 // NOTE: Isso é diferente de calcular aonde o trilho começa, isso indica o caminho que o trem atual
 // vai terminar
-Vector2D Trem::calculatePathEnd(QLabel* track, Vector2D orientation) {
-    // auto axis = defineTrackAxis(track);
+Vector2D Trem::calculatePathEnd(Track* track, Vector2D orientation) {
+    QLabel* track_ui = track->getUi();
     Vector2D track_end = {
-        .x = track->x() + track->width(),
-        .y = track->y() + track->height()
+        .x = track_ui->x() + track_ui->width(),
+        .y = track_ui->y() + track_ui->height()
     };
     Vector2D track_start = {
-        .x = track->x(),
-        .y = track->y()
+        .x = track_ui->x(),
+        .y = track_ui->y()
     };
 
     Vector2D path = {
@@ -69,15 +76,15 @@ Vector2D Trem::calculatePathEnd(QLabel* track, Vector2D orientation) {
 
 // NOTE: Isso é diferente de calcular aonde o trilho termina, isso indica o caminho que o trem atual
 // vai começar
-Vector2D Trem::calculatePathStart(QLabel* track, Vector2D orientation) {
-    // auto axis = defineTrackAxis(track);
+Vector2D Trem::calculatePathStart(Track* track, Vector2D orientation) {
+    QLabel* track_ui = track->getUi();
     Vector2D track_end = {
-        .x = track->x() + track->width(),
-        .y = track->y() + track->height()
+        .x = track_ui->x() + track_ui->width(),
+        .y = track_ui->y() + track_ui->height()
     };
     Vector2D track_start = {
-        .x = track->x(),
-        .y = track->y()
+        .x = track_ui->x(),
+        .y = track_ui->y()
     };
 
     Vector2D path = {
@@ -104,19 +111,20 @@ Vector2D Trem::calculatePathStart(QLabel* track, Vector2D orientation) {
 }
 
 
-Vector2D Trem::calculateOrientation(QLabel* track) {
+Vector2D Trem::calculateOrientation(Track* track) {
+    QLabel* track_ui = track->getUi();
     Vector2D track_pos = {
-        .x = track->x(),
-        .y = track->y(),
+        .x = track_ui->x(),
+        .y = track_ui->y(),
 
     };
 
     Vector2D track_size = {
-        .x = track->width(),
-        .y = track->height(),
+        .x = track_ui->width(),
+        .y = track_ui->height(),
     };
 
-    auto axis = defineTrackAxis(track);
+    auto axis = defineTrackAxis(track_ui);
 
     Vector2D orientation = {
         .x = 0,
@@ -149,9 +157,16 @@ void Trem::run(){
     auto orientation = calculateOrientation(current_track);
     
     while(true){
+        if (this->velocidade >= 400) {
+
+            emit updateGUI(ID, x,y);    //Emite um sinal
+            msleep(velocidade);
+            continue;
+        }
+
         auto path_start = calculatePathStart(current_track, orientation);
         auto path_end = calculatePathEnd(current_track, orientation);
-        auto current_track_axis = defineTrackAxis(current_track);
+        auto current_track_axis = defineTrackAxis(current_track->getUi());
 
         this->x += orientation.x * this->dv;
         this->y += orientation.y * this->dv;

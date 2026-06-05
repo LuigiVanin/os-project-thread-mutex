@@ -5,6 +5,7 @@
 
 // #include "ui_mainwindow.h"
 #include "utils.h"
+#include "track.h"
 
 
 /*
@@ -17,7 +18,7 @@
 class Trem: public QThread{
  Q_OBJECT
 public:
-    Trem(int, QLabel* trem_entity, std::vector<QLabel *> tracks);  //construtor
+    Trem(int, QLabel* trem_entity, std::vector<Track *> tracks);  //construtor
 
     void run();         //função a ser executada pela thread
 
@@ -43,12 +44,12 @@ private:
    int dv = 15;
 
    QLabel *entity;
-   std::vector<QLabel *> tracks;
+   std::vector<Track *> tracks;
 
 
-   Vector2D calculatePathStart(QLabel* track, Vector2D orientation);
-   Vector2D calculatePathEnd(QLabel* track, Vector2D orientation);
-   Vector2D calculateOrientation(QLabel* track);
+   Vector2D calculatePathStart(Track* track, Vector2D orientation);
+   Vector2D calculatePathEnd(Track* track, Vector2D orientation);
+   Vector2D calculateOrientation(Track* track);
 };
 
 #endif // TREM_H
