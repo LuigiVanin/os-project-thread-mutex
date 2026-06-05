@@ -10,6 +10,16 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    QSlider* sliders[TREM_COUNT] = {
+        ui->t1_speed,
+        ui->t2_speed,
+        ui->t3_speed,
+        ui->t4_speed,
+        ui->t5_speed,
+        ui->t6_speed
+
+    };
+
     std::vector<QLabel*> tracks[TREM_COUNT] = {
         {
             ui->label_trilho1,
@@ -66,9 +76,9 @@ MainWindow::MainWindow(QWidget *parent) :
     for (size_t i = 0; i < TREM_COUNT; i++) {
         this->trems.push_back(
             new Trem(
-                i + 1,
-                trems_entities[i],
-                tracks[i]
+                    i + 1,
+                    trems_entities[i],
+                    tracks[i]
                 )
             );
 
@@ -81,9 +91,12 @@ MainWindow::MainWindow(QWidget *parent) :
      * sinal UPDATEGUI, não haverá execução da função UPDATEINTERFACE
      */
 
-for (Trem* trem : trems) {
-    connect(trem ,SIGNAL(updateGUI(int, int, int)), SLOT(updateInterface(int, int, int)));
-}
+    for (size_t i = 0; i < TREM_COUNT; i++) {
+        auto trem = trems[i];
+        auto slider = sliders[i];
+        connect(trem, SIGNAL(updateGUI(int, int, int)), SLOT(updateInterface(int, int, int)));
+        connect(slider, &QSlider::valueChanged, trem, &Trem::updateVelocity);
+    }
 }
 
 //Função que será executada quando o sinal UPDATEGUI for emitido

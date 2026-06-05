@@ -1,7 +1,6 @@
 #include "trem.h"
 #include <QtCore>
 #include <iostream>
-#include <algorithm>
 #include "utils.h"
 
 //Construtor
@@ -15,7 +14,7 @@ Trem::Trem(int ID, QLabel *trem_entity,std::vector<QLabel *> tracks){
     // this->x = trem_entity->x();
     // this->y = trem_entity->x();
 
-    velocidade = 100;
+    this->velocidade = 100;
 }
 
 int Trem::getID() {
@@ -25,6 +24,12 @@ int Trem::getID() {
 QLabel* Trem::getEntity() {
     return this->entity;
 }
+
+void Trem::updateVelocity(int value) {
+
+    this->velocidade = (100 - value) * 2;
+}
+
 
 // NOTE: Isso é diferente de calcular aonde o trilho começa, isso indica o caminho que o trem atual
 // vai terminar

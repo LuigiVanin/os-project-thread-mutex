@@ -18,15 +18,21 @@ class Trem: public QThread{
  Q_OBJECT
 public:
     Trem(int, QLabel* trem_entity, std::vector<QLabel *> tracks);  //construtor
+
     void run();         //função a ser executada pela thread
 
-    int getID();
+    int getID();    
     QLabel* getEntity();
+
+
 
 
 //Cria um sinal
 signals:
     void updateGUI(int,int,int);
+
+public slots:
+    void updateVelocity(int);
 
 private:
    int x;           //posição X do trem na tela
