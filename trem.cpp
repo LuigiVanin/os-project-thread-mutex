@@ -159,10 +159,12 @@ void Trem::run(){
     auto current_track = this->tracks[track_index];
     auto orientation = calculateOrientation(current_track);
 
-    if (current_track->isCritical()) {
-        while(!current_track->tryOccupy(this->getID())) {
-            msleep(velocidade);
-        }
+    // Indica se o trem já travou o mutex do próximo trilho (segurando dois mutexes: atual + próximo)
+    bool has_next_reservation = false;
+
+    // Em trilhos não-críticos tryOccupy sempre sucede de primeira (só registra o ocupante)
+    while(!current_track->tryOccupy(this->getID())) {
+        msleep(velocidade);
     }
 
     while(true){
@@ -180,6 +182,14 @@ void Trem::run(){
         auto path_end = calculatePathEnd(current_track, orientation);
         auto current_track_axis = defineTrackAxis(current_track->getUi());
 
+        // Sem reserva do próximo trilho, o limite é o ponto de espera (recuado em uma
+        // trem-length do fim do trilho); com reserva, o limite é o fim real do trilho
+        Vector2D limit = path_end;
+        if (!has_next_reservation) {
+            limit.x -= orientation.x * trem_w;
+            limit.y -= orientation.y * trem_h;
+        }
+
         this->x += orientation.x * this->dv;
         this->y += orientation.y * this->dv;
 
@@ -188,16 +198,16 @@ void Trem::run(){
 
         // Checagem de limites horizontais - prestando muito atenção para a direção para adicionar a largura do trem
         if (orientation.x > 0) {
-            is_horizontal_inbound = this->x > path_start.x && this->x + trem_w < path_end.x;
+            is_horizontal_inbound = this->x > path_start.x && this->x + trem_w < limit.x;
         } else if(orientation.x < 0) {
-            is_horizontal_inbound = this->x < path_start.x && this->x > path_end.x;
+            is_horizontal_inbound = this->x < path_start.x && this->x > limit.x;
         }
 
         // Checagem de limites verticais - prestando muito atenção para a direção para adicionar a altura do trem
         if (orientation.y > 0) {
-            is_vertical_inbound = this->y > path_start.y && this->y + trem_w < path_end.y;
+            is_vertical_inbound = this->y > path_start.y && this->y + trem_h < limit.y;
         } else if(orientation.y < 0) {
-            is_vertical_inbound = this->y < path_start.y && this->y > path_end.y;
+            is_vertical_inbound = this->y < path_start.y && this->y > limit.y;
         }
 
         if (
@@ -205,23 +215,32 @@ void Trem::run(){
             (current_track_axis == Axis::VERTICAL && !is_vertical_inbound)
            ) {
                
-            // Só atualiza a coordenada relevante ao eixo do novo trilho
+            // Só atualiza a coordenada relevante ao eixo do trilho atual (snap no limite)
             if (current_track_axis == Axis::HORIZONTAL) {
-                this->x = path_end.x - (trem_w * (orientation.x > 0));
+                this->x = limit.x - (trem_w * (orientation.x > 0));
             } else {
-                this->y = path_end.y - (trem_h * (orientation.y > 0));
+                this->y = limit.y - (trem_h * (orientation.y > 0));
             }
 
 
-
-            if (
-                !next_track->isCritical() ||
-                (next_track->isCritical() && next_track->tryOccupy(this->getID()))
-            ) {
+            if (!has_next_reservation) {
+                // Atingiu o PONTO DE ESPERA: tenta reservar o próximo trilho.
+                // Em caso de sucesso o trem passa a segurar DOIS mutexes (atual + próximo)
+                // até atingir o fim real do trilho atual
+                if (next_track->tryOccupy(this->getID())) {
+                    has_next_reservation = true;
+                } else {
+                    // Diagnóstico: ocupante -1 = mutex órfão; IDs em ciclo = espera circular (deadlock)
+                    std::cout << "Trem " << ID << " bloqueado no trilho " << next_track->getID()
+                              << " | ocupante atual: " << next_track->getCurrentOccupant() << std::endl;
+                }
+            } else {
+                // Atingiu o FIM REAL do trilho com o próximo já reservado: migra
                 current_track->release(this->getID());
                 track_index = next_track_index;
                 current_track = this->tracks[track_index];
                 orientation = calculateOrientation(current_track);
+                has_next_reservation = false;
             }
 
 

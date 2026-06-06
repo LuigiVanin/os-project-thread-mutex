@@ -41,7 +41,7 @@ int Track::getCurrentOccupant() {
 }
 
 bool Track::tryOccupy(int trem_id) {
-    // caso não seja trecho crítico pode sempre liberar
+    // caso não seja trecho crítico pode sempre ocupar
     if (!this->isCritical()) {
         this->occupant_id = trem_id;
         return true;
@@ -55,13 +55,13 @@ bool Track::tryOccupy(int trem_id) {
 }
 
 void Track::release(int trem_id) {
-    if (occupant_id != trem_id) return;
+    // if (occupant_id != trem_id) return;
 
     if (!this->isCritical()) {
         this->occupant_id = -1;
         return;
     }
 
-    pthread_mutex_unlock(&this->occupant_mutex);
     this->occupant_id = -1;
+    pthread_mutex_unlock(&this->occupant_mutex);
 }
