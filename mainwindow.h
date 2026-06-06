@@ -30,6 +30,8 @@ private:
 
     //Cria os objetos TREM's
     std::vector<Trem*> trems;
+
+    std::vector<Track*> track_list;
 };
 
 #endif // MAINWINDOW_H

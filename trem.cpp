@@ -9,10 +9,27 @@ Trem::Trem(int ID, QLabel *trem_entity,std::vector<Track *> tracks){
     this->tracks = tracks;
     this->entity = trem_entity;
 
-    this->x = tracks[0]->getUi()->x();
-    this->y = tracks[0]->getUi()->y();
-    // this->x = trem_entity->x();
-    // this->y = trem_entity->x();
+    // Começa de onde o trem foi desenhado na interface
+    this->x = trem_entity->x();
+    this->y = trem_entity->y();
+
+    QLabel* track_ui = tracks[0]->getUi();
+    auto axis = defineTrackAxis(track_ui);
+
+    bool respects_bounds;
+    if (axis == Axis::HORIZONTAL) {
+        respects_bounds = this->x >= track_ui->x() && this->x + TREM_SIZE.x <= track_ui->x() + track_ui->width();
+        this->y = track_ui->y(); // alinha o eixo transversal ao trilho
+    } else {
+        respects_bounds = this->y >= track_ui->y() && this->y + TREM_SIZE.y <= track_ui->y() + track_ui->height();
+        this->x = track_ui->x(); // alinha o eixo transversal ao trilho
+    }
+
+    // Não respeita os limites: inicializa no início do trilho atual
+    if (!respects_bounds) {
+        this->x = track_ui->x();
+        this->y = track_ui->y();
+    }
 
     this->updateVelocity(50);
 }

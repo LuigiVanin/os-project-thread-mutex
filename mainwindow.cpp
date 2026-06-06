@@ -19,7 +19,7 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->t6_speed
     };
 
-    Track* track_list[19] = {
+    this->track_list = {
         new Track(1, ui->label_trilho1),
         new Track(2, ui->label_trilho2, true), // flag critical zone tracks with the last parameter to check for colisions
         new Track(3, ui->label_trilho3, true),
@@ -42,9 +42,14 @@ MainWindow::MainWindow(QWidget *parent) :
     }; // NOTE: Marcadas 9 trilhos(tracks) como regiões críticas - elas terão seus próprios mutex para marcar
        //       qual trem está atualmente usando o trilhos
 
+    // Debug: centraliza o texto dos trilhos (vai exibir o ID do trem ocupante)
+    for (Track* track : this->track_list) {
+        track->getUi()->setAlignment(Qt::AlignCenter);
+    }
+
     // Busca um trilho pelo seu ID na track_list - lambda function fuck it
-    auto trackByID = [&track_list](int id) -> Track* {
-        for (Track* track : track_list) {
+    auto trackByID = [this](int id) -> Track* {
+        for (Track* track : this->track_list) {
             if (track->getID() == id) return track;
         }
         return nullptr;
@@ -86,10 +91,10 @@ MainWindow::MainWindow(QWidget *parent) :
         },
         {
             trackByID(18),
-            trackByID(17),
-            trackByID(8),
+            trackByID(19),
             trackByID(2),
-            trackByID(19)
+            trackByID(8),
+            trackByID(17),
         }
     };
 
@@ -140,6 +145,14 @@ void MainWindow::updateInterface(int id, int x, int y){
         if (id == trem->getID()) {
             trem->getEntity()->setGeometry(x, y, TREM_SIZE.x, TREM_SIZE.y);
         }
+    }
+    
+    // DEBUG
+    for (Track* track : this->track_list) {
+        int occupant = track->getCurrentOccupant();
+        track->getUi()->setText(
+            occupant == -1 ? "" : QString("%1").arg(occupant)
+        );
     }
 }
 
