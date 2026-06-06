@@ -22,27 +22,28 @@ MainWindow::MainWindow(QWidget *parent) :
 
     Track* track_list[19] = {
         new Track(1, ui->label_trilho1),
-        new Track(2, ui->label_trilho2),
-        new Track(3, ui->label_trilho3),
-        new Track(4, ui->label_trilho4),
+        new Track(2, ui->label_trilho2, true), // flag critical zone tracks with the last parameter to check for colisions
+        new Track(3, ui->label_trilho3, true),
+        new Track(4, ui->label_trilho4), // Yeah, I forgor the fifth track and I will not refactor anything anymore
         new Track(6, ui->label_trilho6),
-        new Track(7, ui->label_trilho7),
-        new Track(8, ui->label_trilho8),
+        new Track(7, ui->label_trilho7, true),
+        new Track(8, ui->label_trilho8, true),
         new Track(9, ui->label_trilho9),
         new Track(10, ui->label_trilho10),
-        new Track(11, ui->label_trilho11),
-        new Track(12, ui->label_trilho12),
-        new Track(13, ui->label_trilho13),
+        new Track(11, ui->label_trilho11, true),
+        new Track(12, ui->label_trilho12, true),
+        new Track(13, ui->label_trilho13, true),
         new Track(14, ui->label_trilho14),
         new Track(15, ui->label_trilho15),
-        new Track(16, ui->label_trilho16),
-        new Track(17, ui->label_trilho17),
+        new Track(16, ui->label_trilho16, true),
+        new Track(17, ui->label_trilho17, true),
         new Track(18, ui->label_trilho18),
         new Track(19, ui->label_trilho19),
         new Track(20, ui->label_trilho20),
-    };
+    }; // NOTE: Marcadas 9 trilhos(tracks) como regiões críticas - elas terão seus próprios mutex para marcar
+       //       qual trem está atualmente usando o trilhos
 
-    // Busca um trilho pelo seu ID na track_list
+    // Busca um trilho pelo seu ID na track_list - lambda function fuck it
     auto trackByID = [&track_list](int id) -> Track* {
         for (Track* track : track_list) {
             if (track->getID() == id) return track;
@@ -93,7 +94,7 @@ MainWindow::MainWindow(QWidget *parent) :
         }
     };
 
-    //Cria o trem com seu (ID, posição X, posição Y)
+    // Cria o trem com seu (ID, posição X, posição Y) - nah, vamos pegar a posição a partir da track inicial
     QLabel* trems_entities[TREM_COUNT] = {
         ui->label_trem1,
         ui->label_trem2,

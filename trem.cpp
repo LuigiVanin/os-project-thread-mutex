@@ -28,7 +28,7 @@ QLabel* Trem::getEntity() {
 void Trem::updateVelocity(int value) {
     // this->velocidade = value;
 
-    // O Slide vai de 1 até 99, precisamos que transformar seus inputs para milissegundos
+    // O Slide vai de 1 até 99, precisamos transformar seus inputs para milissegundos
     // Transformação para que a velocidade vá de 1ms até 400ms, sendo 99 = 1ms e 1 = 400ms
     if (value >= 99) {
         this->velocidade = 1;
