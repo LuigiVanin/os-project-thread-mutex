@@ -1,4 +1,5 @@
 #include "track.h"
+#include "pthread.h"
 
 
 Track::Track(int id, QLabel* ui, bool is_critical) {
@@ -10,7 +11,17 @@ Track::Track(int id, QLabel* ui, bool is_critical) {
     //       vago.
     this->critical = is_critical;
 
+    if (this->critical) {
+        pthread_mutex_init(&this->occupant_mutex, NULL);
+        // pthread_mutex_init(this->occupant_mutex, NULL);
+    }
 
+}
+
+Track::~Track() {
+    if (this->isCritical()) {
+        pthread_mutex_destroy(&this->occupant_mutex);
+    }
 }
 
 int Track::getID() {
@@ -23,4 +34,34 @@ QLabel* Track::getUi() {
 
 bool Track::isCritical() {
     return this->critical;
+}
+
+int Track::getCurrentOccupant() {
+    return this->occupant_id;
+}
+
+bool Track::tryOccupy(int trem_id) {
+    // caso não seja trecho crítico pode sempre liberar
+    if (!this->isCritical()) {
+        this->occupant_id = trem_id;
+        return true;
+    }
+
+    auto occupied = pthread_mutex_trylock(&this->occupant_mutex) == 0;
+    
+    if (occupied) this->occupant_id = trem_id;
+
+    return occupied;
+}
+
+void Track::release(int trem_id) {
+    if (occupant_id != trem_id) return;
+
+    if (!this->isCritical()) {
+        this->occupant_id = -1;
+        return;
+    }
+
+    pthread_mutex_unlock(&this->occupant_mutex);
+    this->occupant_id = -1;
 }

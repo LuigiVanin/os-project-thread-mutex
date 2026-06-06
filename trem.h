@@ -19,6 +19,7 @@ class Trem: public QThread{
  Q_OBJECT
 public:
     Trem(int, QLabel* trem_entity, std::vector<Track *> tracks);  //construtor
+    ~Trem(); // destructor
 
     void run();         //função a ser executada pela thread
 

@@ -17,7 +17,6 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->t4_speed,
         ui->t5_speed,
         ui->t6_speed
-
     };
 
     Track* track_list[19] = {
@@ -151,6 +150,10 @@ MainWindow::~MainWindow()
         trem->terminate();
         delete trem;
     }
+
+    // for (auto track : this->tracks) {
+    //     delete track;
+    // }
 
     delete ui;
 }

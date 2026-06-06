@@ -17,6 +17,9 @@ Trem::Trem(int ID, QLabel *trem_entity,std::vector<Track *> tracks){
     this->updateVelocity(50);
 }
 
+Trem::~Trem() {
+}
+
 int Trem::getID() {
     return this->ID;
 }
@@ -149,14 +152,23 @@ Vector2D Trem::calculateOrientation(Track* track) {
 //Função a ser executada após executar trem->START
 void Trem::run(){
     uint track_index = 0;
+
     const int trem_h = TREM_SIZE.y;
     const int trem_w = TREM_SIZE.x;
 
     auto current_track = this->tracks[track_index];
-    
     auto orientation = calculateOrientation(current_track);
-    
+
+    if (current_track->isCritical()) {
+        while(!current_track->tryOccupy(this->getID())) {
+            msleep(velocidade);
+        }
+    }
+
     while(true){
+        uint next_track_index = (track_index + 1) % this->tracks.size();
+        auto next_track = this->tracks[next_track_index];
+
         if (this->velocidade >= 400) {
 
             emit updateGUI(ID, x,y);    //Emite um sinal
@@ -200,9 +212,17 @@ void Trem::run(){
                 this->y = path_end.y - (trem_h * (orientation.y > 0));
             }
 
-            track_index = (track_index + 1) % this->tracks.size();
-            current_track = this->tracks[track_index];
-            orientation = calculateOrientation(current_track);
+
+
+            if (
+                !next_track->isCritical() ||
+                (next_track->isCritical() && next_track->tryOccupy(this->getID()))
+            ) {
+                current_track->release(this->getID());
+                track_index = next_track_index;
+                current_track = this->tracks[track_index];
+                orientation = calculateOrientation(current_track);
+            }
 
 
         }
