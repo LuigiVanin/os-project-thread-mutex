@@ -19,10 +19,10 @@ Trem::Trem(int ID, QLabel *trem_entity,std::vector<Track *> tracks){
     bool respects_bounds;
     if (axis == Axis::HORIZONTAL) {
         respects_bounds = this->x >= track_ui->x() && this->x + TREM_SIZE.x <= track_ui->x() + track_ui->width();
-        this->y = track_ui->y(); // alinha o eixo transversal ao trilho
+        this->y = track_ui->y();
     } else {
         respects_bounds = this->y >= track_ui->y() && this->y + TREM_SIZE.y <= track_ui->y() + track_ui->height();
-        this->x = track_ui->x(); // alinha o eixo transversal ao trilho
+        this->x = track_ui->x();
     }
 
     // Não respeita os limites: inicializa no início do trilho atual
@@ -176,10 +176,8 @@ void Trem::run(){
     auto current_track = this->tracks[track_index];
     auto orientation = calculateOrientation(current_track);
 
-    // Indica se o trem já travou o mutex do próximo trilho (segurando dois mutexes: atual + próximo)
-    bool has_next_reservation = false;
+    uint reserved_ahead = 0;
 
-    // Em trilhos não-críticos tryOccupy sempre sucede de primeira (só registra o ocupante)
     while(!current_track->tryOccupy(this->getID())) {
         msleep(velocidade);
     }
@@ -202,7 +200,7 @@ void Trem::run(){
         // Sem reserva do próximo trilho, o limite é o ponto de espera (recuado em uma
         // trem-length do fim do trilho); com reserva, o limite é o fim real do trilho
         Vector2D limit = path_end;
-        if (!has_next_reservation) {
+        if (reserved_ahead == 0) {
             limit.x -= orientation.x * trem_w;
             limit.y -= orientation.y * trem_h;
         }
@@ -240,24 +238,38 @@ void Trem::run(){
             }
 
 
-            if (!has_next_reservation) {
-                // Atingiu o PONTO DE ESPERA: tenta reservar o próximo trilho.
-                // Em caso de sucesso o trem passa a segurar DOIS mutexes (atual + próximo)
-                // até atingir o fim real do trilho atual
-                if (next_track->tryOccupy(this->getID())) {
-                    has_next_reservation = true;
+            if (reserved_ahead == 0) {
+                // Atingiu o PONTO DE ESPERA: se o próximo trilho for crítico, a cadeia **é crítica**
+                uint chain_size = 1;
+                while (next_track->isCritical()
+                       && chain_size < this->tracks.size() - 1
+                       && this->tracks[(track_index + 1 + chain_size) % this->tracks.size()]->isCritical()) {
+                    chain_size++;
+                }
+
+                uint reserved = 0;
+                while (reserved < chain_size
+                       && this->tracks[(track_index + 1 + reserved) % this->tracks.size()]->tryOccupy(this->getID())) {
+                    reserved++;
+                }
+
+                if (reserved == chain_size) {
+                    reserved_ahead = chain_size;
                 } else {
-                    // Diagnóstico: ocupante -1 = mutex órfão; IDs em ciclo = espera circular (deadlock)
-                    std::cout << "Trem " << ID << " bloqueado no trilho " << next_track->getID()
-                              << " | ocupante atual: " << next_track->getCurrentOccupant() << std::endl;
+                    // Caso em algum memoento haja um trilho que nao seja possível reservar, se deve desbloquear todos os trihos previamente reservados
+                    auto blocked = this->tracks[(track_index + 1 + reserved) % this->tracks.size()];
+
+                    while (reserved > 0) {
+                        reserved--;
+                        this->tracks[(track_index + 1 + reserved) % this->tracks.size()]->release(this->getID());
+                    }
                 }
             } else {
-                // Atingiu o FIM REAL do trilho com o próximo já reservado: migra
                 current_track->release(this->getID());
                 track_index = next_track_index;
                 current_track = this->tracks[track_index];
                 orientation = calculateOrientation(current_track);
-                has_next_reservation = false;
+                reserved_ahead--;
             }
 
 
